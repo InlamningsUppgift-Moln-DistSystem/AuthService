@@ -90,12 +90,14 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-// 11. Swagger-middleware i dev-läge
-if (app.Environment.IsDevelopment())
+// 11. Swagger aktiverat i alla miljöer (för test)
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Auth API V1");
+    c.RoutePrefix = "swagger"; // så att det ligger på /swagger
+});
+
 
 app.UseHttpsRedirection();
 
