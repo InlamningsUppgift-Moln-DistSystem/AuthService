@@ -19,16 +19,16 @@ var builder = WebApplication.CreateBuilder(args);
 string keyVaultUrl = builder.Configuration["KeyVaultUrl"];
 builder.Configuration.AddAzureKeyVault(new Uri(keyVaultUrl), new DefaultAzureCredential());
 
-// 2. Testa att läsa ut hemligheter direkt efter Key Vault laddats in
+// 2. Läs ut JwtSettings från konfiguration
 var jwtSecret = builder.Configuration["Jwt-Secret"];
 var jwtIssuer = builder.Configuration["JwtSettings:Issuer"];
 var jwtAudience = builder.Configuration["JwtSettings:Audience"];
 
-Console.WriteLine($"Jwt-Secret from config: {jwtSecret ?? "NULL or EMPTY"}");
-Console.WriteLine($"Jwt-Issuer from config: {jwtIssuer ?? "NULL or EMPTY"}");
-Console.WriteLine($"Jwt-Audience from config: {jwtAudience ?? "NULL or EMPTY"}");
+Console.WriteLine($"Jwt-Secret: {(string.IsNullOrEmpty(jwtSecret) ? "NULL" : "LOADED")}");
+Console.WriteLine($"Jwt-Issuer: {jwtIssuer}");
+Console.WriteLine($"Jwt-Audience: {jwtAudience}");
 
-// 3. Konfigurera JwtSettings-objektet explicit
+// 3. Sätt upp JwtSettings för DI
 var jwtSettings = new JwtSettings
 {
     Secret = jwtSecret,
@@ -36,7 +36,6 @@ var jwtSettings = new JwtSettings
     Audience = jwtAudience
 };
 
-// 4. Lägg in i DI-container så andra kan använda IOptions<JwtSettings>
 builder.Services.Configure<JwtSettings>(options =>
 {
     options.Secret = jwtSettings.Secret;
@@ -44,16 +43,16 @@ builder.Services.Configure<JwtSettings>(options =>
     options.Audience = jwtSettings.Audience;
 });
 
-// 5. Lägg till DbContext med connection string från Key Vault
+// 4. Setup DbContext
 builder.Services.AddDbContext<AuthDbContext>(options =>
     options.UseSqlServer(builder.Configuration["DefaultConnection"]));
 
-// 6. Lägg till Identity
+// 5. Identity
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
     .AddEntityFrameworkStores<AuthDbContext>()
     .AddDefaultTokenProviders();
 
-// 7. Lägg till JWT-autentisering med explicit jwtSettings
+// 6. JWT
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -73,15 +72,15 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// 8. Lägg till övriga tjänster
+// 7. Dependency Injection
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IAuthService, AuthService.Services.AuthService>();
-builder.Services.AddScoped<IEmailSender, EmailSender>();
+builder.Services.AddScoped<IEmailSender, SendGridEmailSender>();
 
-// 9. Lägg till controllers
+// 8. Controllers
 builder.Services.AddControllers();
 
-// 10. Swagger setup
+// 9. Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -90,14 +89,13 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-// 11. Swagger aktiverat i alla miljöer (för test)
+// 10. Swagger UI
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "Auth API V1");
-    c.RoutePrefix = "swagger"; // så att det ligger på /swagger
+    c.RoutePrefix = "swagger";
 });
-
 
 app.UseHttpsRedirection();
 

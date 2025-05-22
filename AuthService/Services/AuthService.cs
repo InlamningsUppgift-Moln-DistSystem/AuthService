@@ -3,6 +3,7 @@ using AuthService.Helpers;
 using AuthService.Models;
 using AuthService.Repositories;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Configuration;
 
 namespace AuthService.Services
 {
@@ -10,11 +11,16 @@ namespace AuthService.Services
     {
         private readonly IUserRepository _userRepository;
         private readonly IEmailSender _emailSender;
+        private readonly IConfiguration _config;
 
-        public AuthService(IUserRepository userRepository, IEmailSender emailSender)
+        public AuthService(
+            IUserRepository userRepository,
+            IEmailSender emailSender,
+            IConfiguration config)
         {
             _userRepository = userRepository;
             _emailSender = emailSender;
+            _config = config;
         }
 
         public async Task<IdentityResult> RegisterAsync(RegisterRequest request)
@@ -31,23 +37,57 @@ namespace AuthService.Services
 
             if (result.Succeeded)
             {
-                // Skicka bekräftelsemail
-                var confirmationLink = $"https://yourdomain.com/confirm?email={user.Email}";
-                await _emailSender.SendEmailAsync(user.Email, "Confirm your account",
-                    $"Click the link to confirm: {confirmationLink}");
+                try
+                {
+                    // TODO: Byt ut denna URL till din frontend-sidas faktiska bekräftelsesida
+                    var confirmationLink = $"https://ventixe.netlify.app/confirm?email={Uri.EscapeDataString(user.Email)}";
+
+                    await _emailSender.SendEmailAsync(
+                        user.Email,
+                        "Confirm your Ventixe account",
+                        $"<p>Hi {user.UserName},</p><p>Please confirm your account by clicking the link below:</p><p><a href=\"{confirmationLink}\">{confirmationLink}</a></p><br/><p>Ventixe Team</p>"
+                    );
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"❌ Failed to send confirmation email: {ex.Message}");
+                    // Obs: Du kan välja att radera användaren om e-post är kritiskt
+                }
             }
 
             return result;
         }
 
-        public async Task<ApplicationUser?> LoginAsync(LoginRequest request)
+
+        public async Task<object?> LoginAsync(LoginRequest request)
         {
             var user = await _userRepository.GetByEmailAsync(request.Email);
-
             if (user == null) return null;
 
             var valid = await _userRepository.CheckPasswordAsync(user, request.Password);
-            return valid ? user : null;
+            if (!valid) return null;
+
+            var token = JwtTokenGenerator.GenerateToken(user, _config);
+
+            return new
+            {
+                token,
+                username = user.UserName,
+                emailConfirmed = user.EmailConfirmed,
+                initials = user.Initials
+            };
         }
+
+        public async Task<bool> ConfirmEmailAsync(string email)
+        {
+            var user = await _userRepository.GetByEmailAsync(email);
+            if (user == null) return false;
+            if (user.EmailConfirmed) return true;
+
+            user.EmailConfirmed = true;
+            var result = await _userRepository.UpdateAsync(user);
+            return result.Succeeded;
+        }
+
     }
 }

@@ -8,5 +8,8 @@ namespace AuthService.Repositories
         Task<ApplicationUser?> GetByEmailAsync(string email);
         Task<IdentityResult> CreateAsync(ApplicationUser user, string password);
         Task<bool> CheckPasswordAsync(ApplicationUser user, string password);
+        Task<IdentityResult> UpdateAsync(ApplicationUser user);
+
+
     }
 }
