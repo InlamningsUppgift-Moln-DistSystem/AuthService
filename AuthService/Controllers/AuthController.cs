@@ -41,20 +41,38 @@ namespace AuthService.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginRequest request)
         {
+            Console.WriteLine($"📥 Inloggning initierad: {request.Username}");
+
             var user = await _authService.LoginAsync(request);
+
             if (user == null)
-                return Unauthorized("Invalid credentials");
-
-            var token = JwtTokenGenerator.GenerateToken(user, _configuration);
-
-            return Ok(new
             {
-                token,
-                username = user.UserName,
-                initials = user.Initials,
-                emailConfirmed = user.EmailConfirmed
-            });
+                Console.WriteLine("❌ Fel: användare hittades ej eller lösenord ogiltigt.");
+                return Unauthorized("Invalid credentials");
+            }
+
+            Console.WriteLine("✅ Användare autentiserad");
+
+            try
+            {
+                var token = JwtTokenGenerator.GenerateToken(user, _configuration);
+                Console.WriteLine("🔑 Token genererad");
+
+                return Ok(new
+                {
+                    token,
+                    username = user.UserName,
+                    initials = user.Initials,
+                    emailConfirmed = user.EmailConfirmed
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"🔥 Undantag vid token-generering: {ex.Message}");
+                return StatusCode(500, "Token generation failed");
+            }
         }
+
 
 
 
