@@ -19,18 +19,43 @@ namespace AuthService.Controllers
         public async Task<IActionResult> Register(RegisterRequest request)
         {
             var result = await _authService.RegisterAsync(request);
-            return Ok(result);
+
+            if (!result.Succeeded)
+            {
+                Console.WriteLine("❌ Registration failed:");
+                foreach (var error in result.Errors)
+                    Console.WriteLine($"{error.Code} - {error.Description}");
+
+                return BadRequest(result.Errors); // ← frontend får 400 med info
+            }
+
+            Console.WriteLine($"✅ Registered {request.Email}");
+            return Ok();
         }
 
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginRequest request)
         {
-            var result = await _authService.LoginAsync(request);
-            if (result == null)
-                return Unauthorized("Invalid credentials");
+            try
+            {
+                var result = await _authService.LoginAsync(request);
 
-            return Ok(result);
+                if (result == null)
+                {
+                    Console.WriteLine($"❌ Failed login for {request.Email}");
+                    return Unauthorized(new { message = "Invalid email or password" });
+                }
+
+                Console.WriteLine($"✅ Logged in: {request.Email}");
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"💥 Login exception: {ex.Message}");
+                return StatusCode(500, new { message = "Internal server error" });
+            }
         }
+
 
         [HttpGet("confirm")]
         public async Task<IActionResult> ConfirmEmail([FromQuery] string email)
