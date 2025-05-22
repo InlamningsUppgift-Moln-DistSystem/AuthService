@@ -1,4 +1,4 @@
-using AuthService.Configuration;
+ï»¿using AuthService.Configuration;
 using AuthService.Data;
 using AuthService.Helpers;
 using AuthService.Repositories;
@@ -15,11 +15,11 @@ using Azure.Extensions.AspNetCore.Configuration.Secrets;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Lägg till Key Vault
+// 1. LÃ¤gg till Key Vault
 string keyVaultUrl = builder.Configuration["KeyVaultUrl"];
 builder.Configuration.AddAzureKeyVault(new Uri(keyVaultUrl), new DefaultAzureCredential());
 
-// 2. Läs ut JwtSettings
+// 2. LÃ¤s ut JwtSettings
 var jwtSecret = builder.Configuration["Jwt-Secret"];
 var jwtIssuer = builder.Configuration["JwtSettings:Issuer"];
 var jwtAudience = builder.Configuration["JwtSettings:Audience"];
@@ -43,16 +43,20 @@ builder.Services.Configure<JwtSettings>(options =>
     options.Audience = jwtSettings.Audience;
 });
 
-// 4. CORS – tillåt frontend från Azure Static Web App
+// 4. CORS â€“ tillÃ¥t frontend frÃ¥n Azure Static Web App
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("https://jolly-river-05ee55f03.6.azurestaticapps.net")
-              .AllowAnyHeader()
-              .AllowAnyMethod();
+        policy.WithOrigins(
+            "https://jolly-river-05ee55f03.6.azurestaticapps.net",
+            "http://localhost:5174" // ðŸ‘ˆ fÃ¶r lokal utveckling
+        )
+        .AllowAnyHeader()
+        .AllowAnyMethod();
     });
 });
+
 
 // 5. DbContext
 builder.Services.AddDbContext<AuthDbContext>(options =>
@@ -108,7 +112,7 @@ app.UseSwaggerUI(c =>
 
 app.UseHttpsRedirection();
 
-app.UseCors("AllowFrontend"); // ?? AKTIVERA CORS här före authentication
+app.UseCors("AllowFrontend"); // ðŸŸ¢ AKTIVERA CORS hÃ¤r fÃ¶re authentication
 
 app.UseAuthentication();
 app.UseAuthorization();
