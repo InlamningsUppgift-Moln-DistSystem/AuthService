@@ -15,11 +15,11 @@ using Azure.Extensions.AspNetCore.Configuration.Secrets;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Lägg till Key Vault som configkälla tidigt
+// 1. Lägg till Key Vault
 string keyVaultUrl = builder.Configuration["KeyVaultUrl"];
 builder.Configuration.AddAzureKeyVault(new Uri(keyVaultUrl), new DefaultAzureCredential());
 
-// 2. Läs ut JwtSettings från konfiguration
+// 2. Läs ut JwtSettings
 var jwtSecret = builder.Configuration["Jwt-Secret"];
 var jwtIssuer = builder.Configuration["JwtSettings:Issuer"];
 var jwtAudience = builder.Configuration["JwtSettings:Audience"];
@@ -28,7 +28,7 @@ Console.WriteLine($"Jwt-Secret: {(string.IsNullOrEmpty(jwtSecret) ? "NULL" : "LO
 Console.WriteLine($"Jwt-Issuer: {jwtIssuer}");
 Console.WriteLine($"Jwt-Audience: {jwtAudience}");
 
-// 3. Sätt upp JwtSettings för DI
+// 3. Setup JwtSettings
 var jwtSettings = new JwtSettings
 {
     Secret = jwtSecret,
@@ -43,16 +43,27 @@ builder.Services.Configure<JwtSettings>(options =>
     options.Audience = jwtSettings.Audience;
 });
 
-// 4. Setup DbContext
+// 4. CORS – tillåt frontend från Azure Static Web App
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins("https://jolly-river-05ee55f03.6.azurestaticapps.net")
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
+
+// 5. DbContext
 builder.Services.AddDbContext<AuthDbContext>(options =>
     options.UseSqlServer(builder.Configuration["DefaultConnection"]));
 
-// 5. Identity
+// 6. Identity
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
     .AddEntityFrameworkStores<AuthDbContext>()
     .AddDefaultTokenProviders();
 
-// 6. JWT
+// 7. JWT Authentication
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -72,15 +83,13 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// 7. Dependency Injection
+// 8. Dependency Injection
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IAuthService, AuthService.Services.AuthService>();
 builder.Services.AddScoped<IEmailSender, SendGridEmailSender>();
 
-// 8. Controllers
+// 9. Controllers & Swagger
 builder.Services.AddControllers();
-
-// 9. Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -89,7 +98,7 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-// 10. Swagger UI
+// 10. Middleware
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
@@ -98,6 +107,8 @@ app.UseSwaggerUI(c =>
 });
 
 app.UseHttpsRedirection();
+
+app.UseCors("AllowFrontend"); // ?? AKTIVERA CORS här före authentication
 
 app.UseAuthentication();
 app.UseAuthorization();
