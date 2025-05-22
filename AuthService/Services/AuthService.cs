@@ -25,6 +25,29 @@ namespace AuthService.Services
 
         public async Task<IdentityResult> RegisterAsync(RegisterRequest request)
         {
+            // Validera e-post
+            var existingUser = await _userRepository.GetByEmailAsync(request.Email);
+            if (existingUser != null)
+            {
+                return IdentityResult.Failed(new IdentityError
+                {
+                    Code = "DuplicateEmail",
+                    Description = $"Email '{request.Email}' is already in use."
+                });
+            }
+
+            // Validera användarnamn
+            var usernameExists = await _userRepository.GetByUsernameAsync(request.Username);
+            if (usernameExists != null)
+            {
+                return IdentityResult.Failed(new IdentityError
+                {
+                    Code = "DuplicateUserName",
+                    Description = $"Username '{request.Username}' is already taken."
+                });
+            }
+
+            // Skapa användaren
             var user = new ApplicationUser
             {
                 UserName = request.Username,
@@ -39,25 +62,31 @@ namespace AuthService.Services
             {
                 try
                 {
-                    // TODO: Byt ut denna URL till din frontend-sidas faktiska bekräftelsesida
+                    // Använd faktiska frontend-sidan
                     var confirmationLink = $"https://jolly-river-05ee55f03.6.azurestaticapps.net/confirm?email={Uri.EscapeDataString(user.Email)}";
-
 
                     await _emailSender.SendEmailAsync(
                         user.Email,
                         "Confirm your Ventixe account",
-                        $"<p>Hi {user.UserName},</p><p>Please confirm your account by clicking the link below:</p><p><a href=\"{confirmationLink}\">{confirmationLink}</a></p><br/><p>Ventixe Team</p>"
+                        $"""
+                <p>Hi {user.UserName},</p>
+                <p>Please confirm your account by clicking the link below:</p>
+                <p><a href="{confirmationLink}">{confirmationLink}</a></p>
+                <br/>
+                <p>Ventixe Team</p>
+                """
                     );
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine($"❌ Failed to send confirmation email: {ex.Message}");
-                    // Obs: Du kan välja att radera användaren om e-post är kritiskt
+                    // Du kan välja att radera användaren här om det är kritiskt att bekräftelsen skickas
                 }
             }
 
             return result;
         }
+
 
 
         public async Task<object?> LoginAsync(LoginRequest request)

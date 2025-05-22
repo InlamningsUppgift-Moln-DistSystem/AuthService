@@ -30,6 +30,10 @@ namespace AuthService.Repositories
         {
             return _userManager.UpdateAsync(user);
         }
+        public Task<ApplicationUser?> GetByUsernameAsync(string username)
+        {
+            return _userManager.FindByNameAsync(username);
+        }
 
     }
 }
