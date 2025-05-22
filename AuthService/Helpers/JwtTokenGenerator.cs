@@ -1,36 +1,40 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+﻿using AuthService.Models;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using AuthService.Models;
-using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
 
-namespace AuthService.Helpers
+public static class JwtTokenGenerator
 {
-    public static class JwtTokenGenerator
+    public static string GenerateToken(ApplicationUser user, IConfiguration config)
     {
-        public static string GenerateToken(ApplicationUser user, IConfiguration config)
+        var secret = config["Jwt-Secret"];
+        var issuer = config["JwtSettings:Issuer"];
+        var audience = config["JwtSettings:Audience"];
+        var expiry = config["JwtSettings:ExpiryMinutes"] ?? "60";
+
+        if (string.IsNullOrEmpty(secret))
+            throw new Exception("JWT secret is missing");
+
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
+        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+        var claims = new[]
         {
-            var jwtSettings = config.GetSection("JwtSettings");
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Secret"]!));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        new Claim(ClaimTypes.NameIdentifier, user.Id),
+        new Claim(ClaimTypes.Name, user.UserName!),
+        new Claim(ClaimTypes.Email, user.Email!)
+    };
 
-            var claims = new[]
-            {
-                new Claim(ClaimTypes.NameIdentifier, user.Id),
-                new Claim(ClaimTypes.Name, user.UserName!),
-                new Claim(ClaimTypes.Email, user.Email!),
-            };
+        var token = new JwtSecurityToken(
+            issuer: issuer,
+            audience: audience,
+            claims: claims,
+            expires: DateTime.UtcNow.AddMinutes(int.Parse(expiry)),
+            signingCredentials: creds
+        );
 
-            var token = new JwtSecurityToken(
-                issuer: jwtSettings["Issuer"],
-                audience: jwtSettings["Audience"],
-                claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(int.Parse(jwtSettings["ExpiryMinutes"]!)),
-                signingCredentials: creds
-            );
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
-        }
+        return new JwtSecurityTokenHandler().WriteToken(token);
     }
+
 }
