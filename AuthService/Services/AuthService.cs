@@ -40,7 +40,8 @@ namespace AuthService.Services
                 try
                 {
                     // TODO: Byt ut denna URL till din frontend-sidas faktiska bekräftelsesida
-                    var confirmationLink = $"https://ventixe.netlify.app/confirm?email={Uri.EscapeDataString(user.Email)}";
+                    var confirmationLink = $"https://jolly-river-05ee55f03.6.azurestaticapps.net/confirm?email={Uri.EscapeDataString(user.Email)}";
+
 
                     await _emailSender.SendEmailAsync(
                         user.Email,
