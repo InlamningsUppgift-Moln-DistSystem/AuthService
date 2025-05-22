@@ -89,24 +89,17 @@ namespace AuthService.Services
 
 
 
-        public async Task<object?> LoginAsync(LoginRequest request)
+        public async Task<ApplicationUser?> LoginAsync(LoginRequest request)
         {
-            var user = await _userRepository.GetByEmailAsync(request.Email);
-            if (user == null) return null;
+            var user = await _userRepository.GetByUsernameAsync(request.Username);
+
+            if (user == null)
+                return null;
 
             var valid = await _userRepository.CheckPasswordAsync(user, request.Password);
-            if (!valid) return null;
-
-            var token = JwtTokenGenerator.GenerateToken(user, _config);
-
-            return new
-            {
-                token,
-                username = user.UserName,
-                emailConfirmed = user.EmailConfirmed,
-                initials = user.Initials
-            };
+            return valid ? user : null;
         }
+
 
         public async Task<bool> ConfirmEmailAsync(string email)
         {

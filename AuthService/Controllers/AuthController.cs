@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using AuthService.DTOs;
 using AuthService.Services;
+using AuthService.Helpers;
+using Microsoft.Extensions.Configuration;
 
 namespace AuthService.Controllers
 {
@@ -9,11 +11,14 @@ namespace AuthService.Controllers
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;
+        private readonly IConfiguration _configuration;
 
-        public AuthController(IAuthService authService)
+        public AuthController(IAuthService authService, IConfiguration configuration)
         {
             _authService = authService;
+            _configuration = configuration;
         }
+
 
         [HttpPost("register")]
         public async Task<IActionResult> Register(RegisterRequest request)
@@ -36,25 +41,22 @@ namespace AuthService.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginRequest request)
         {
-            try
-            {
-                var result = await _authService.LoginAsync(request);
+            var user = await _authService.LoginAsync(request);
+            if (user == null)
+                return Unauthorized("Invalid credentials");
 
-                if (result == null)
-                {
-                    Console.WriteLine($"❌ Failed login for {request.Email}");
-                    return Unauthorized(new { message = "Invalid email or password" });
-                }
+            var token = JwtTokenGenerator.GenerateToken(user, _configuration);
 
-                Console.WriteLine($"✅ Logged in: {request.Email}");
-                return Ok(result);
-            }
-            catch (Exception ex)
+            return Ok(new
             {
-                Console.WriteLine($"💥 Login exception: {ex.Message}");
-                return StatusCode(500, new { message = "Internal server error" });
-            }
+                token,
+                username = user.UserName,
+                initials = user.Initials,
+                emailConfirmed = user.EmailConfirmed
+            });
         }
+
+
 
 
         [HttpGet("confirm")]
