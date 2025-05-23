@@ -13,7 +13,8 @@ namespace AuthService.Services
         Task<bool> ConfirmEmailAsync(string email);
 
         Task<ApplicationUser?> GetUserByEmailAsync(string email);
-        Task SendConfirmationEmailAsync(string email, string link);
+        Task SendConfirmationEmailAsync(ApplicationUser user);
+
 
     }
 }
