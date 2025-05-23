@@ -98,11 +98,11 @@ namespace AuthService.Controllers
             if (user.EmailConfirmed)
                 return BadRequest("Email already confirmed.");
 
-            var confirmationLink = $"https://yourdomain.com/confirm?email={email}";
-            await _authService.SendConfirmationEmailAsync(user.Email, confirmationLink);
+            await _authService.SendConfirmationEmailAsync(user);
 
             return Ok();
         }
+
 
 
     }
