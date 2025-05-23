@@ -87,6 +87,23 @@ namespace AuthService.Controllers
             return Ok("Email confirmed successfully");
         }
 
+        [HttpPost("resend-confirmation")]
+        public async Task<IActionResult> ResendConfirmationEmail([FromQuery] string email)
+        {
+            var user = await _authService.GetUserByEmailAsync(email);
+
+            if (user == null)
+                return NotFound("User not found.");
+
+            if (user.EmailConfirmed)
+                return BadRequest("Email already confirmed.");
+
+            var confirmationLink = $"https://yourdomain.com/confirm?email={email}";
+            await _authService.SendConfirmationEmailAsync(user.Email, confirmationLink);
+
+            return Ok();
+        }
+
 
     }
 }

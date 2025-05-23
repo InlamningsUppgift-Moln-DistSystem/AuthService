@@ -111,6 +111,16 @@ namespace AuthService.Services
             var result = await _userRepository.UpdateAsync(user);
             return result.Succeeded;
         }
+        public async Task<ApplicationUser?> GetUserByEmailAsync(string email)
+        {
+            return await _userRepository.GetByEmailAsync(email);
+        }
+
+        public async Task SendConfirmationEmailAsync(string email, string link)
+        {
+            await _emailSender.SendEmailAsync(email, "Confirm your account",
+                $"Click the link to confirm: {link}");
+        }
 
     }
 }
