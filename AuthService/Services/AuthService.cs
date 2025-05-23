@@ -116,11 +116,23 @@ namespace AuthService.Services
             return await _userRepository.GetByEmailAsync(email);
         }
 
-        public async Task SendConfirmationEmailAsync(string email, string link)
+        public async Task SendConfirmationEmailAsync(ApplicationUser user)
         {
-            await _emailSender.SendEmailAsync(email, "Confirm your account",
-                $"Click the link to confirm: {link}");
+            var confirmationLink = $"https://jolly-river-05ee55f03.6.azurestaticapps.net/confirm?email={Uri.EscapeDataString(user.Email)}";
+
+            await _emailSender.SendEmailAsync(
+                user.Email,
+                "Confirm your Ventixe account",
+                $"""
+        <p>Hi {user.UserName},</p>
+        <p>Please confirm your account by clicking the link below:</p>
+        <p><a href="{confirmationLink}">{confirmationLink}</a></p>
+        <br/>
+        <p>Ventixe Team</p>
+        """
+            );
         }
+
 
     }
 }
