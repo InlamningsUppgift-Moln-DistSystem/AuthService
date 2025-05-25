@@ -8,7 +8,8 @@ namespace AuthService.Services
     public interface IAuthService
     {
         Task<IdentityResult> RegisterAsync(RegisterRequest request);
-        Task<ApplicationUser?> LoginAsync(LoginRequest request);
+        Task<LoginResult> LoginAsync(LoginRequest request);
+
 
         Task<bool> ConfirmEmailAsync(string email);
 

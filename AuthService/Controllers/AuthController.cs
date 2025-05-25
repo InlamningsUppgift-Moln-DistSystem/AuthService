@@ -3,6 +3,7 @@ using AuthService.DTOs;
 using AuthService.Services;
 using AuthService.Helpers;
 using Microsoft.Extensions.Configuration;
+using AuthService.Models;
 
 namespace AuthService.Controllers
 {
@@ -38,41 +39,40 @@ namespace AuthService.Controllers
             return Ok();
         }
 
-
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginRequest request)
         {
             Console.WriteLine($"📥 Inloggning initierad: {request.Username}");
 
-            var user = await _authService.LoginAsync(request);
+            var result = await _authService.LoginAsync(request);
 
-            if (user == null)
+            if (result.User == null)
             {
-                Console.WriteLine("❌ Fel: användare hittades ej eller lösenord ogiltigt.");
-                return Unauthorized("Invalid credentials");
+                Console.WriteLine($"❌ Inloggning misslyckades: {result.Error}");
+                return Unauthorized(new { error = result.Error });
             }
-
-            Console.WriteLine("✅ Användare autentiserad");
 
             try
             {
-                var token = JwtTokenGenerator.GenerateToken(user, _configuration);
+                var token = JwtTokenGenerator.GenerateToken(result.User, _configuration);
                 Console.WriteLine("🔑 Token genererad");
 
                 return Ok(new
                 {
                     token,
-                    username = user.UserName,
-                    initials = user.Initials,
-                    emailConfirmed = user.EmailConfirmed
+                    username = result.User.UserName,
+                    initials = result.User.Initials,
+                    emailConfirmed = result.User.EmailConfirmed
                 });
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"🔥 Undantag vid token-generering: {ex.Message}");
-                return StatusCode(500, "Token generation failed");
+                return StatusCode(500, new { error = "Server error. Please try again later." });
             }
         }
+
+
 
 
 

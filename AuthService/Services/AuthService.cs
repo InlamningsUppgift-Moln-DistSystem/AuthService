@@ -141,15 +141,28 @@ namespace AuthService.Services
 
 
 
-        public async Task<ApplicationUser?> LoginAsync(LoginRequest request)
+        public async Task<LoginResult> LoginAsync(LoginRequest request)
         {
+            if (string.IsNullOrWhiteSpace(request.Username))
+                return new LoginResult { Error = "Username or email is required." };
+
+            if (string.IsNullOrWhiteSpace(request.Password))
+                return new LoginResult { Error = "Password is required." };
+
             var user = await _userRepository.GetByUsernameAsync(request.Username);
 
             if (user == null)
-                return null;
+                return new LoginResult { Error = "Account not found." };
+
+            if (!user.EmailConfirmed)
+                return new LoginResult { Error = "Your email address is not verified." };
 
             var valid = await _userRepository.CheckPasswordAsync(user, request.Password);
-            return valid ? user : null;
+
+            if (!valid)
+                return new LoginResult { Error = "Incorrect password." };
+
+            return new LoginResult { User = user };
         }
 
 
