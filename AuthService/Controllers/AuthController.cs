@@ -31,12 +31,13 @@ namespace AuthService.Controllers
                 foreach (var error in result.Errors)
                     Console.WriteLine($"{error.Code} - {error.Description}");
 
-                return BadRequest(result.Errors); // ← frontend får 400 med info
+                return BadRequest(result.Errors); // Return list to frontend
             }
 
             Console.WriteLine($"✅ Registered {request.Email}");
             return Ok();
         }
+
 
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginRequest request)
