@@ -17,24 +17,23 @@ namespace AuthService.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Check()
+        public async Task<IActionResult> Get()
         {
             var result = new Dictionary<string, string>();
 
-            // 1. DB-koll
+            // 🔍 1. Databasanslutning
             try
             {
-                var conn = new SqlConnection(_config["DefaultConnection"]);
+                using var conn = new SqlConnection(_config["DefaultConnection"]);
                 await conn.OpenAsync();
                 result["Database"] = "✅ OK";
-                conn.Close();
             }
             catch (Exception ex)
             {
                 result["Database"] = $"❌ {ex.Message}";
             }
 
-            // 2. Service Bus-koll
+            // 🔍 2. Service Bus
             try
             {
                 var client = new ServiceBusClient(_config["ServiceBus:ConnectionString"]);
@@ -45,6 +44,9 @@ namespace AuthService.Controllers
             {
                 result["ServiceBus"] = $"❌ {ex.Message}";
             }
+
+            // 🔍 3. Key Vault kontroll
+            result["KeyVaultUrl"] = _config["KeyVaultUrl"] ?? "❌ MISSING";
 
             return Ok(result);
         }
