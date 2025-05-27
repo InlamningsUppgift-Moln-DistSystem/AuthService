@@ -33,11 +33,11 @@ namespace AuthService.Controllers
                 result["Database"] = $"❌ {ex.Message}";
             }
 
-            // 🔍 2. Service Bus
+            // 🔍 2. Service Bus (utan config["QueueName"])
             try
             {
                 var client = new ServiceBusClient(_config["ServiceBus:ConnectionString"]);
-                var sender = client.CreateSender(_config["ServiceBus:QueueName"]);
+                var sender = client.CreateSender("email-queue"); // ← hårdkodat!
                 result["ServiceBus"] = "✅ OK";
             }
             catch (Exception ex)
@@ -45,7 +45,7 @@ namespace AuthService.Controllers
                 result["ServiceBus"] = $"❌ {ex.Message}";
             }
 
-            // 🔍 3. Key Vault kontroll
+            // 🔍 3. Key Vault
             result["KeyVaultUrl"] = _config["KeyVaultUrl"] ?? "❌ MISSING";
 
             return Ok(result);
