@@ -119,17 +119,21 @@ namespace AuthService.Services
             if (result.Succeeded)
             {
                 var confirmationLink = $"https://jolly-river-05ee55f03.6.azurestaticapps.net/confirm?email={Uri.EscapeDataString(user.Email)}";
-                await _emailSender.SendEmailAsync(
-                    user.Email,
-                    "Confirm your Ventixe account",
-                    $"""
-                <p>Hi {user.UserName},</p>
-                <p>Please confirm your account by clicking the link below:</p>
-                <p><a href=\"{confirmationLink}\">{confirmationLink}</a></p>
-                <br/>
-                <p>Ventixe Team</p>
-                """
-                );
+
+                var email = new EmailMessageDto
+                {
+                    To = user.Email,
+                    Subject = "Confirm your Ventixe account",
+                    Body = $"""
+                    <p>Hi {user.UserName},</p>
+                    <p>Please confirm your account by clicking the link below:</p>
+                    <p><a href=\"{confirmationLink}\">{confirmationLink}</a></p>
+                    <br/>
+                    <p>Ventixe Team</p>
+                    """
+                };
+
+                await _emailSender.SendEmailAsync(email);
             }
 
             return result;
@@ -179,17 +183,20 @@ namespace AuthService.Services
         {
             var confirmationLink = $"https://jolly-river-05ee55f03.6.azurestaticapps.net/confirm?email={Uri.EscapeDataString(user.Email)}";
 
-            await _emailSender.SendEmailAsync(
-                user.Email,
-                "Confirm your Ventixe account",
-                $"""
-            <p>Hi {user.UserName},</p>
-            <p>Please confirm your account by clicking the link below:</p>
-            <p><a href=\"{confirmationLink}\">{confirmationLink}</a></p>
-            <br/>
-            <p>Ventixe Team</p>
-            """
-            );
+            var email = new EmailMessageDto
+            {
+                To = user.Email,
+                Subject = "Confirm your Ventixe account",
+                Body = $"""
+                <p>Hi {user.UserName},</p>
+                <p>Please confirm your account by clicking the link below:</p>
+                <p><a href=\"{confirmationLink}\">{confirmationLink}</a></p>
+                <br/>
+                <p>Ventixe Team</p>
+                """
+            };
+
+            await _emailSender.SendEmailAsync(email);
         }
     }
 }
