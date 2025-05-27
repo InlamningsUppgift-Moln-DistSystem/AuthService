@@ -15,11 +15,11 @@ using Azure.Extensions.AspNetCore.Configuration.Secrets;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Lägg till Key Vault
+// 1. Key Vault
 string keyVaultUrl = builder.Configuration["KeyVaultUrl"];
 builder.Configuration.AddAzureKeyVault(new Uri(keyVaultUrl), new DefaultAzureCredential());
 
-// 2. Läs ut JwtSettings
+// 2. JWT-inställningar
 var jwtSecret = builder.Configuration["Jwt-Secret"];
 var jwtIssuer = builder.Configuration["JwtSettings:Issuer"];
 var jwtAudience = builder.Configuration["JwtSettings:Audience"];
@@ -28,7 +28,7 @@ Console.WriteLine($"Jwt-Secret: {(string.IsNullOrEmpty(jwtSecret) ? "NULL" : "LO
 Console.WriteLine($"Jwt-Issuer: {jwtIssuer}");
 Console.WriteLine($"Jwt-Audience: {jwtAudience}");
 
-// 3. Setup JwtSettings
+// 3. JWT config object
 var jwtSettings = new JwtSettings
 {
     Secret = jwtSecret,
@@ -43,19 +43,16 @@ builder.Services.Configure<JwtSettings>(options =>
     options.Audience = jwtSettings.Audience;
 });
 
-// 4. CORS – tillåt frontend från Azure Static Web App
+// 4. CORS – tillåt frontend
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins(
-          "https://jolly-river-05ee55f03.6.azurestaticapps.net"
-        )
-        .AllowAnyHeader()
-        .AllowAnyMethod();
+        policy.WithOrigins("https://jolly-river-05ee55f03.6.azurestaticapps.net")
+              .AllowAnyHeader()
+              .AllowAnyMethod();
     });
 });
-
 
 // 5. DbContext
 builder.Services.AddDbContext<AuthDbContext>(options =>
@@ -89,9 +86,9 @@ builder.Services.AddAuthentication(options =>
 // 8. Dependency Injection
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IAuthService, AuthService.Services.AuthService>();
-builder.Services.AddScoped<IEmailSender, SendGridEmailSender>();
+builder.Services.AddScoped<EmailQueueSender>(); // ⬅️ ny rad
 
-// 9. Controllers & Swagger
+// 9. Swagger
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -101,7 +98,7 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-// 10. Middleware
+// 10. Middleware pipeline
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
@@ -110,12 +107,8 @@ app.UseSwaggerUI(c =>
 });
 
 app.UseHttpsRedirection();
-
-app.UseCors("AllowFrontend"); // 🟢 AKTIVERA CORS här före authentication
-
+app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();

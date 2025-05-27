@@ -11,12 +11,12 @@ namespace AuthService.Services
     public class AuthService : IAuthService
     {
         private readonly IUserRepository _userRepository;
-        private readonly IEmailSender _emailSender;
+        private readonly EmailQueueSender _emailSender;
         private readonly IConfiguration _config;
 
         public AuthService(
             IUserRepository userRepository,
-            IEmailSender emailSender,
+            EmailQueueSender emailSender,
             IConfiguration config)
         {
             _userRepository = userRepository;
@@ -28,7 +28,6 @@ namespace AuthService.Services
         {
             var errors = new List<IdentityError>();
 
-            // Email format
             if (!Regex.IsMatch(request.Email ?? "", @"^\S+@\S+\.\S+$"))
             {
                 errors.Add(new IdentityError
@@ -38,7 +37,6 @@ namespace AuthService.Services
                 });
             }
 
-            // Password krav
             if (string.IsNullOrWhiteSpace(request.Password) || request.Password.Length < 8)
             {
                 errors.Add(new IdentityError
@@ -47,10 +45,10 @@ namespace AuthService.Services
                     Description = "Password must be at least 8 characters."
                 });
             }
-            else if (!Regex.IsMatch(request.Password, @"[A-Z]") ||
-                     !Regex.IsMatch(request.Password, @"[a-z]") ||
-                     !Regex.IsMatch(request.Password, @"[0-9]") ||
-                     !Regex.IsMatch(request.Password, @"[^a-zA-Z0-9]"))
+            else if (!Regex.IsMatch(request.Password, "[A-Z]") ||
+                     !Regex.IsMatch(request.Password, "[a-z]") ||
+                     !Regex.IsMatch(request.Password, "[0-9]") ||
+                     !Regex.IsMatch(request.Password, "[^a-zA-Z0-9]"))
             {
                 errors.Add(new IdentityError
                 {
@@ -68,7 +66,6 @@ namespace AuthService.Services
                 });
             }
 
-            // Username krav
             if (string.IsNullOrWhiteSpace(request.Username) || request.Username.Length < 3 || request.Username.Length > 20)
             {
                 errors.Add(new IdentityError
@@ -126,20 +123,17 @@ namespace AuthService.Services
                     user.Email,
                     "Confirm your Ventixe account",
                     $"""
-            <p>Hi {user.UserName},</p>
-            <p>Please confirm your account by clicking the link below:</p>
-            <p><a href="{confirmationLink}">{confirmationLink}</a></p>
-            <br/>
-            <p>Ventixe Team</p>
-            """
+                <p>Hi {user.UserName},</p>
+                <p>Please confirm your account by clicking the link below:</p>
+                <p><a href=\"{confirmationLink}\">{confirmationLink}</a></p>
+                <br/>
+                <p>Ventixe Team</p>
+                """
                 );
             }
 
             return result;
         }
-
-
-
 
         public async Task<LoginResult> LoginAsync(LoginRequest request)
         {
@@ -165,7 +159,6 @@ namespace AuthService.Services
             return new LoginResult { User = user };
         }
 
-
         public async Task<bool> ConfirmEmailAsync(string email)
         {
             var user = await _userRepository.GetByEmailAsync(email);
@@ -176,6 +169,7 @@ namespace AuthService.Services
             var result = await _userRepository.UpdateAsync(user);
             return result.Succeeded;
         }
+
         public async Task<ApplicationUser?> GetUserByEmailAsync(string email)
         {
             return await _userRepository.GetByEmailAsync(email);
@@ -189,15 +183,13 @@ namespace AuthService.Services
                 user.Email,
                 "Confirm your Ventixe account",
                 $"""
-        <p>Hi {user.UserName},</p>
-        <p>Please confirm your account by clicking the link below:</p>
-        <p><a href="{confirmationLink}">{confirmationLink}</a></p>
-        <br/>
-        <p>Ventixe Team</p>
-        """
+            <p>Hi {user.UserName},</p>
+            <p>Please confirm your account by clicking the link below:</p>
+            <p><a href=\"{confirmationLink}\">{confirmationLink}</a></p>
+            <br/>
+            <p>Ventixe Team</p>
+            """
             );
         }
-
-
     }
 }
