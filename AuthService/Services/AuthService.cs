@@ -125,12 +125,12 @@ namespace AuthService.Services
                     To = user.Email,
                     Subject = "Confirm your Ventixe account",
                     Body = $"""
-                    <p>Hi {user.UserName},</p>
-                    <p>Please confirm your account by clicking the link below:</p>
-                    <p><a href=\"{confirmationLink}\">{confirmationLink}</a></p>
-                    <br/>
-                    <p>Ventixe Team</p>
-                    """
+<p>Hi {user.UserName},</p>
+<p>Please confirm your account by clicking the link below:</p>
+<p><a href="{confirmationLink}">{confirmationLink}</a></p>
+<br/>
+<p>Ventixe Team</p>
+"""
                 };
 
                 await _emailSender.SendEmailAsync(email);
